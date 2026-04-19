@@ -64,6 +64,10 @@ export default {
         "gradient-hero": "var(--gradient-hero)",
         "gradient-card": "var(--gradient-card)",
       },
+      fontFamily: {
+        sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+        display: ['"Space Grotesk"', "Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+      },
       boxShadow: {
         glow: "var(--shadow-glow)",
         soft: "var(--shadow-soft)",
