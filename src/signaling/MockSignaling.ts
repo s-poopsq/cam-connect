@@ -19,8 +19,6 @@ import type {
   SignalingEvents,
 } from "./types";
 
-type Listener<K extends keyof SignalingEvents> = SignalingEvents[K];
-
 interface QueueEntry {
   peerId: string;
   interests: string[];
@@ -69,7 +67,7 @@ export class MockSignaling implements SignalingAdapter {
   private partnerId: string | null = null;
   private pairId: string | null = null;
   private interests: string[] = [];
-  private listeners: { [K in keyof SignalingEvents]?: Set<Listener<K>> } = {};
+  private listeners: { [K in keyof SignalingEvents]?: Set<SignalingEvents[K]> } = {};
   private inQueue = false;
 
   constructor() {
@@ -178,10 +176,15 @@ export class MockSignaling implements SignalingAdapter {
   }
 
   on<K extends keyof SignalingEvents>(event: K, handler: SignalingEvents[K]) {
-    (this.listeners[event] ??= new Set() as Set<Listener<K>>).add(handler);
+    let set = this.listeners[event] as Set<SignalingEvents[K]> | undefined;
+    if (!set) {
+      set = new Set<SignalingEvents[K]>();
+      this.listeners[event] = set as never;
+    }
+    set.add(handler);
   }
   off<K extends keyof SignalingEvents>(event: K, handler: SignalingEvents[K]) {
-    this.listeners[event]?.delete(handler);
+    (this.listeners[event] as Set<SignalingEvents[K]> | undefined)?.delete(handler);
   }
 
   // ---- internals ----
@@ -190,9 +193,10 @@ export class MockSignaling implements SignalingAdapter {
     event: K,
     ...args: Parameters<SignalingEvents[K]>
   ) {
-    this.listeners[event]?.forEach((h) => {
-      // @ts-expect-error tuple spread to fn
-      h(...args);
+    const set = this.listeners[event] as Set<SignalingEvents[K]> | undefined;
+    if (!set) return;
+    set.forEach((h) => {
+      (h as (...a: unknown[]) => void)(...(args as unknown[]));
     });
   }
 
